@@ -8,6 +8,7 @@ WORKDIR /app
 
 COPY go.mod go.sum ./
 RUN go mod download
+RUN go mod tidy
 COPY . .
 
 RUN apt update && apt install -y ca-certificates
