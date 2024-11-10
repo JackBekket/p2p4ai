@@ -1,6 +1,12 @@
+networks:
+  host:
+    driver: host
 services:
   p2chat:
     build: .
-#    ports:
-#      - 8186:8186
+#    networks:
+#      - host
+    ports:
+      - 9085:9085
+      - 4001:4001
     restart: unless-stopped
