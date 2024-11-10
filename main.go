@@ -18,7 +18,7 @@ import (
 )
 
 var (
-  topicNameFlag = flag.String("topicName", "applesauce", "name of topic to join")
+  topicNameFlag = flag.String("topicName", "skynet", "name of topic to join")
 )
 
 func main() {
