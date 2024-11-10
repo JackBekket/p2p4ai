@@ -72,10 +72,41 @@ func main() {
 
 		// libp2p.New constructs a new libp2p Host. Other options can be added
 	// here.
+	/*
 	host, err := libp2p.New(libp2p.ListenAddrs([]multiaddr.Multiaddr(config.ListenAddresses)...))
 	if err != nil {
 		panic(err)
 	}
+	*/
+
+
+	//start relay
+	go StartRelay()
+
+
+	// then start our host.. (?)
+	sourceMultiAddrTCP, _ := multiaddr.NewMultiaddr("/ip4/0.0.0.0/tcp/0")
+	sourceMultiAddrUDP, _ := multiaddr.NewMultiaddr("/ip4/0.0.0.0/udp/0/quic-v1")
+
+	// libp2p.New constructs a new libp2p Host.
+	// Other options can be added here.
+	host,err := libp2p.New(
+		libp2p.ListenAddrs(sourceMultiAddrTCP, sourceMultiAddrUDP),
+
+		// Attempt to open ports using uPNP for NATed hosts.
+		libp2p.NATPortMap(),
+		libp2p.EnableHolePunching(),
+		libp2p.EnableNATService(),
+
+		libp2p.EnableRelayService(),
+	)
+
+	if err != nil {
+		panic(err)
+	}
+
+
+
 	logger.Info("Host created. We are:", host.ID())
 	logger.Info(host.Addrs())
 

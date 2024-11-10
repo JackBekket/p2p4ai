@@ -8,4 +8,5 @@ services:
 #      - host
     ports:
       - 9085:9085
+      - 4001:4001
     restart: unless-stopped

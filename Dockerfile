@@ -21,6 +21,7 @@ RUN go build -o main .
 
 
 EXPOSE 9080
+EXPOSE 4001
 
 
 
