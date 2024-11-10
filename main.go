@@ -5,6 +5,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"sync"
 
@@ -17,13 +18,27 @@ import (
 	dutil "github.com/libp2p/go-libp2p/p2p/discovery/util"
 )
 
+
 var (
   topicNameFlag = flag.String("topicName", "skynet", "name of topic to join")
 )
 
+
+//var topicNameFlag string
+
+
 func main() {
 	flag.Parse()
 	ctx := context.Background()
+
+	/*
+	_ = godotenv.Load()
+	topicEnv := os.Getenv("TOPIC") 
+
+	topicNameFlag := flag.String("topicName", topicEnv, "name of topic to join")
+	*/
+
+	log.Println("topicName: ", topicNameFlag)
   
 	h, err := libp2p.New(libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
 	if err != nil {
@@ -39,12 +54,19 @@ func main() {
 	if err != nil {
 	  panic(err)
 	}
+
+	// send test message
+	//msg := 
+	//SendMessageToTopic(ctx, topic, []byte("127.0.0.1:50051"))
+	SendMessageToTopic(ctx, topic, []byte("this is a test. a chair is against the wall."))
+
 	go streamConsoleTo(ctx, topic)
   
 	sub, err := topic.Subscribe()
 	if err != nil {
 	  panic(err)
 	}
+	go handleIncomingMessages(ctx,sub)
 	printMessagesFrom(ctx, sub)
   }
 
@@ -132,6 +154,24 @@ func main() {
 	  fmt.Println(m.ReceivedFrom, ": ", string(m.Message.Data))
 	}
   }
+
+
+  func SendMessageToTopic(ctx context.Context, topic *pubsub.Topic, message []byte) error {
+	return topic.Publish(ctx, message)
+  }
+
+  func handleIncomingMessages(ctx context.Context, sub *pubsub.Subscription) {
+	for {
+	  m, err := sub.Next(ctx)
+	  if err != nil {
+		fmt.Println("Error receiving message:", err)
+		continue
+	  }
+	  fmt.Println("Received message from:", m.ReceivedFrom, ":", string(m.Message.Data))
+	  // Process the received message here, e.g., extract gRPC address:port info
+	}
+  }
+
 
   
   
