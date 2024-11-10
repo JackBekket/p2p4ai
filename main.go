@@ -4,6 +4,9 @@ import (
 	"bufio"
 	"context"
 	"flag"
+
+	//"flag"
+	//"flags"
 	"fmt"
 	"time"
 
@@ -20,12 +23,14 @@ import (
 	drouting "github.com/libp2p/go-libp2p/p2p/discovery/routing"
 	dutil "github.com/libp2p/go-libp2p/p2p/discovery/util"
 	"github.com/multiformats/go-multiaddr"
+	//"github.com/jackbekket/p2p4ai/flags"
 )
 
-
+/*
 var (
   topicNameFlag = flag.String("topicName", "skynet", "name of topic to join")
 )
+*/
 
 var logger = log.Logger("rendezvous")
 
@@ -62,7 +67,7 @@ func main() {
 	*/
 
 	//log.("topicName: ", topicNameFlag)
-	logger.Infoln("topicName: ", topicNameFlag)
+	logger.Infoln("topicName: ", config.RendezvousString)
 
 
 		// libp2p.New constructs a new libp2p Host. Other options can be added
@@ -86,7 +91,7 @@ func main() {
 	if err != nil {
 	  panic(err)
 	}
-	topic, err := ps.Join(*topicNameFlag)
+	topic, err := ps.Join(*&config.RendezvousString)
 	if err != nil {
 	  panic(err)
 	}
@@ -166,14 +171,14 @@ func main() {
 	// This is like telling your friends to meet you at the Eiffel Tower.
 	logger.Info("Announcing ourselves...")
 	routingDiscovery := drouting.NewRoutingDiscovery(kademliaDHT)
-	dutil.Advertise(ctx, routingDiscovery, *topicNameFlag)
+	dutil.Advertise(ctx, routingDiscovery, *&cfg.RendezvousString)
 	logger.Debug("Successfully announced!")
   
 	// Look for others who have announced and attempt to connect to them
 	anyConnected := false
 	for !anyConnected {
 	  fmt.Println("Searching for peers...")
-	  peerChan, err := routingDiscovery.FindPeers(ctx, *topicNameFlag)
+	  peerChan, err := routingDiscovery.FindPeers(ctx, *&cfg.RendezvousString)
 	  if err != nil {
 		panic(err)
 	  }
