@@ -4,6 +4,8 @@ networks:
 services:
   p2chat:
     build: .
-    networks:
-      - host
+#    networks:
+#      - host
+    ports:
+      - 9085:9085
     restart: unless-stopped

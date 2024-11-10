@@ -20,7 +20,7 @@ RUN go build -o main .
 #RUN apk add ca-certificates
 
 
-#EXPOSE 8080
+EXPOSE 9080
 
 
 
