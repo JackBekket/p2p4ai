@@ -1,6 +1,8 @@
 services:
   p2chat:
     build: .
+    networks:
+    - host
 #    ports:
 #      - 8186:8186
     restart: unless-stopped
