@@ -60,7 +60,8 @@ func main() {
 	//SendMessageToTopic(ctx, topic, []byte("127.0.0.1:50051"))
 	SendMessageToTopic(ctx, topic, []byte("this is a test. a chair is against the wall."))
 
-	go streamConsoleTo(ctx, topic)
+	// Docker does not have a console
+	//go streamConsoleTo(ctx, topic)
   
 	sub, err := topic.Subscribe()
 	if err != nil {
