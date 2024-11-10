@@ -5,10 +5,13 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
+	"time"
+
+	//"log"
 	"os"
 	"sync"
 
+	"github.com/ipfs/go-log/v2"
 	"github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
@@ -16,6 +19,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	drouting "github.com/libp2p/go-libp2p/p2p/discovery/routing"
 	dutil "github.com/libp2p/go-libp2p/p2p/discovery/util"
+	"github.com/multiformats/go-multiaddr"
 )
 
 
@@ -23,13 +27,32 @@ var (
   topicNameFlag = flag.String("topicName", "skynet", "name of topic to join")
 )
 
+var logger = log.Logger("rendezvous")
+
 
 //var topicNameFlag string
 
 
 func main() {
-	flag.Parse()
+	//flag.Parse()
 	ctx := context.Background()
+
+
+	log.SetAllLoggers(log.LevelWarn)
+	log.SetLogLevel("rendezvous", "info")
+	help := flag.Bool("h", false, "Display Help")
+	config, err := ParseFlags()
+	if err != nil {
+		panic(err)
+	}
+
+	if *help {
+		fmt.Println("This program demonstrates a simple p2p chat application using libp2p")
+		fmt.Println()
+		fmt.Println("Usage: Run './chat in two different terminals. Let them connect to the bootstrap nodes, announce themselves and connect to the peers")
+		flag.PrintDefaults()
+		return
+	}
 
 	/*
 	_ = godotenv.Load()
@@ -38,15 +61,28 @@ func main() {
 	topicNameFlag := flag.String("topicName", topicEnv, "name of topic to join")
 	*/
 
-	log.Println("topicName: ", topicNameFlag)
-  
+	//log.("topicName: ", topicNameFlag)
+	logger.Infoln("topicName: ", topicNameFlag)
+
+
+		// libp2p.New constructs a new libp2p Host. Other options can be added
+	// here.
+	host, err := libp2p.New(libp2p.ListenAddrs([]multiaddr.Multiaddr(config.ListenAddresses)...))
+	if err != nil {
+		panic(err)
+	}
+	logger.Info("Host created. We are:", host.ID())
+	logger.Info(host.Addrs())
+
+	/*
 	h, err := libp2p.New(libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"))
 	if err != nil {
 	  panic(err)
 	}
-	go discoverPeers(ctx, h)
+	*/
+	go discoverPeers(ctx, host,config)
   
-	ps, err := pubsub.NewGossipSub(ctx, h)
+	ps, err := pubsub.NewGossipSub(ctx, host)
 	if err != nil {
 	  panic(err)
 	}
@@ -73,18 +109,38 @@ func main() {
 
   
 
-  func initDHT(ctx context.Context, h host.Host) *dht.IpfsDHT {
+  func initDHT(ctx context.Context, h host.Host,cfg Config) *dht.IpfsDHT {
+
+		// Start a DHT, for use in peer discovery. We can't just make a new DHT
+	// client because we want each peer to maintain its own local copy of the
+	// DHT, so that the bootstrapping node of the DHT can go down without
+	// inhibiting future peer discovery.
+	//ctx := context.Background()
+	config := cfg
+	bootstrapPeers := make([]peer.AddrInfo, len(config.BootstrapPeers))
+	for i, addr := range config.BootstrapPeers {
+		peerinfo, _ := peer.AddrInfoFromP2pAddr(addr)
+		bootstrapPeers[i] = *peerinfo
+	}
+
+
+
+
+
 	// Start a DHT, for use in peer discovery. We can't just make a new DHT
 	// client because we want each peer to maintain its own local copy of the
 	// DHT, so that the bootstrapping node of the DHT can go down without
 	// inhibiting future peer discovery.
-	kademliaDHT, err := dht.New(ctx, h)
+	kademliaDHT, err := dht.New(ctx, h,dht.BootstrapPeers(bootstrapPeers...))
 	if err != nil {
 	  panic(err)
 	}
+	logger.Debug("Bootstrapping the DHT")
 	if err = kademliaDHT.Bootstrap(ctx); err != nil {
 	  panic(err)
 	}
+		// Wait a bit to let bootstrapping finish (really bootstrap should block until it's ready, but that isn't the case yet.)
+	time.Sleep(1 * time.Second)
 	var wg sync.WaitGroup
 	for _, peerAddr := range dht.DefaultBootstrapPeers {
 	  peerinfo, _ := peer.AddrInfoFromP2pAddr(peerAddr)
@@ -102,10 +158,16 @@ func main() {
   }
 
   
-  func discoverPeers(ctx context.Context, h host.Host) {
-	kademliaDHT := initDHT(ctx, h)
+  func discoverPeers(ctx context.Context, h host.Host, cfg Config) {
+	// bootstrap DHT
+	kademliaDHT := initDHT(ctx, h,cfg)
+
+	// We use a rendezvous point "meet me here" to announce our location.
+	// This is like telling your friends to meet you at the Eiffel Tower.
+	logger.Info("Announcing ourselves...")
 	routingDiscovery := drouting.NewRoutingDiscovery(kademliaDHT)
 	dutil.Advertise(ctx, routingDiscovery, *topicNameFlag)
+	logger.Debug("Successfully announced!")
   
 	// Look for others who have announced and attempt to connect to them
 	anyConnected := false
