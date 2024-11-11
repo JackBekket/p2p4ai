@@ -15,16 +15,7 @@ import (
 
 
 
-
-func StartRelay(tcp string, udp string) (host.Host,error){
-	
-	/*
-	relay1, err := libp2p.New(libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/9876"))
-	if err != nil {
-		log.Printf("Failed to create relay1: %v", err)
-		return
-	}
-	*/
+func CreateHost(tcp string, udp string) (host.Host,error) {
 	//sourceMultiAddrTCP, _ := multiaddr.NewMultiaddr("/ip4/0.0.0.0/tcp/4001")
 	//sourceMultiAddrUDP, _ := multiaddr.NewMultiaddr("/ip4/0.0.0.0/udp/4001/quic-v1")
 	sourceMultiAddrTCP, _ := multiaddr.NewMultiaddr(tcp)
@@ -45,31 +36,54 @@ func StartRelay(tcp string, udp string) (host.Host,error){
 		libp2p.EnableRelayService(),
 	)
 	if err != nil {
+		
 		panic(err)
-	}
-	
-	_, err = relay.New(host, relay.WithInfiniteLimits())
-	if err != nil {
-		log.Printf("Failed to instantiate the relay: %v", err)
 		return nil,err
 	}
+	return host,nil
+}
+
+
+
+func StartRelay(h host.Host) {
+	
+	host := h
+	
+	_, err := relay.New(host, relay.WithInfiniteLimits())
+	if err != nil {
+		log.Printf("Failed to instantiate the relay: %v", err)
+		//return nil,err
+	}
+
+
+	/*
+	relay1info := peer.AddrInfo{
+		ID:    host.ID(),
+		Addrs: host.Addrs(),
+	}
+	*/
+
+
+
+
+
 	_, err = dht.New(context.Background(), host, dht.Mode(dht.ModeServer))
 	if err != nil {
 		log.Printf("Failed to create DHT: %v", err)
-		return nil,err
+		//return nil,err
 	}
 	
 	_, err = autonat.New(host)
 	if err != nil {
 		log.Printf("Failed to create AutoNAT: %v", err)
-		return nil,err
+		//return nil,err
 	}
 	
 	log.Println("Relay started")
 	fmt.Printf("[*] Your Bootstrap ID Is: /ip4/%s/tcp/%v/p2p/%s\n", "0.0.0.0", 4001, host.ID().String())
-	return host,nil
+	//return host,nil
 	
-	//select {}
+	select {}
 
 
 }

@@ -82,7 +82,13 @@ func main() {
 	relay_udp := "/ip4/0.0.0.0/udp/4001/quic-v1"
 
 	//start relay
-	go StartRelay(relay_tcp,relay_udp)
+	//go StartRelay(relay_tcp,relay_udp)
+	relay_host,err := CreateHost(relay_tcp,relay_udp)
+	relay1info := peer.AddrInfo{
+		ID:    relay_host.ID(),
+		Addrs: relay_host.Addrs(),
+	}
+	go StartRelay(relay_host)
 
 
 	// then start our host.. (?)
@@ -127,6 +133,9 @@ func main() {
 	if err != nil {
 	  panic(err)
 	}
+
+	// connect host to relay
+	host.Connect(ctx,relay1info)
 
 	// send test message
 	//msg := 
