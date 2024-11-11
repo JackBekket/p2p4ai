@@ -78,20 +78,21 @@ func main() {
 		panic(err)
 	}
 	*/
-
+	relay_tcp := "/ip4/0.0.0.0/tcp/4001"
+	relay_udp := "/ip4/0.0.0.0/udp/4001/quic-v1"
 
 	//start relay
-	go StartRelay()
+	go StartRelay(relay_tcp,relay_udp)
 
 
 	// then start our host.. (?)
-	sourceMultiAddrTCP, _ := multiaddr.NewMultiaddr("/ip4/0.0.0.0/tcp/0")
-	sourceMultiAddrUDP, _ := multiaddr.NewMultiaddr("/ip4/0.0.0.0/udp/0/quic-v1")
+	//sourceMultiAddrTCP, _ := multiaddr.NewMultiaddr("/ip4/0.0.0.0/tcp/0")
+	//sourceMultiAddrUDP, _ := multiaddr.NewMultiaddr("/ip4/0.0.0.0/udp/0/quic-v1")
 
 	// libp2p.New constructs a new libp2p Host.
 	// Other options can be added here.
 	host,err := libp2p.New(
-		libp2p.ListenAddrs(sourceMultiAddrTCP, sourceMultiAddrUDP),
+		libp2p.ListenAddrs([]multiaddr.Multiaddr(config.ListenAddresses)...),
 
 		// Attempt to open ports using uPNP for NATed hosts.
 		libp2p.NATPortMap(),
