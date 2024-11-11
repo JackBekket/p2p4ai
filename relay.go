@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/p2p/host/autonat"
+	"github.com/libp2p/go-libp2p/p2p/net/connmgr"
 	"github.com/libp2p/go-libp2p/p2p/protocol/circuitv2/relay"
 	"github.com/multiformats/go-multiaddr"
 )
@@ -22,14 +24,23 @@ func CreateHost(tcp string, udp string) (host.Host,error) {
 	sourceMultiAddrUDP, _ := multiaddr.NewMultiaddr(udp)
 
 
+		connmgr, err := connmgr.NewConnManager(
+			100, // Lowwater
+			400, // HighWater,
+			connmgr.WithGracePeriod(time.Minute),
+		)
+
+
 
 	// libp2p.New constructs a new libp2p Host.
 	// Other options can be added here.
 	host,err := libp2p.New(
+		
 		libp2p.ListenAddrs(sourceMultiAddrTCP, sourceMultiAddrUDP),
 
 		// Attempt to open ports using uPNP for NATed hosts.
 		libp2p.NATPortMap(),
+		libp2p.ConnectionManager(connmgr),
 		libp2p.EnableHolePunching(),
 		libp2p.EnableNATService(),
 

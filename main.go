@@ -22,8 +22,10 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	drouting "github.com/libp2p/go-libp2p/p2p/discovery/routing"
 	dutil "github.com/libp2p/go-libp2p/p2p/discovery/util"
-	"github.com/multiformats/go-multiaddr"
+	ma "github.com/multiformats/go-multiaddr"
+
 	//"github.com/jackbekket/p2p4ai/flags"
+	"github.com/libp2p/go-libp2p/p2p/protocol/circuitv2/client"
 )
 
 /*
@@ -98,7 +100,7 @@ func main() {
 	// libp2p.New constructs a new libp2p Host.
 	// Other options can be added here.
 	host,err := libp2p.New(
-		libp2p.ListenAddrs([]multiaddr.Multiaddr(config.ListenAddresses)...),
+		libp2p.ListenAddrs([]ma.Multiaddr(config.ListenAddresses)...),
 
 		// Attempt to open ports using uPNP for NATed hosts.
 		libp2p.NATPortMap(),
@@ -123,6 +125,32 @@ func main() {
 	  panic(err)
 	}
 	*/
+
+
+	// connect host to relay
+	host.Connect(ctx,relay1info)
+
+	// Hosts that want to have messages relayed on their behalf need to reserve a slot
+	// with the circuit relay service host
+	// As we will open a stream to unreachable2, unreachable2 needs to make the
+	// reservation
+	_, err = client.Reserve(context.Background(), host, relay1info)
+	if err != nil {
+		logger.Errorf("host failed to receive a relay reservation from relay1. %v", err)
+		return
+	}
+
+	// Now create a new address for unreachable2 that specifies to communicate via
+	// relay1 using a circuit relay
+	relayaddr, err := ma.NewMultiaddr("/p2p/" + relay1info.ID.String() + "/p2p-circuit/p2p/" + host.ID().String())
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+	logger.Infoln("relay address is: ", relayaddr)
+
+	config.BootstrapPeers.Set(relayaddr.String())
+
 	go discoverPeers(ctx, host,config)
   
 	ps, err := pubsub.NewGossipSub(ctx, host)
@@ -134,8 +162,6 @@ func main() {
 	  panic(err)
 	}
 
-	// connect host to relay
-	host.Connect(ctx,relay1info)
 
 	// send test message
 	//msg := 
